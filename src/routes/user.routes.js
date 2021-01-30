@@ -7,7 +7,6 @@ const sharp = require('sharp')
 
 app.post("/users", async (req, res, next) => {
     const user = new User(req.body)
-    console.log("ana hna yasta")
     try {
         await user.save()
         const token = await user.generateAuthToken()
