@@ -2,10 +2,12 @@ const express = require('express')
 const app = new express.Router()
 const User = require("../models/user")
 const auth = require('../middlewares/auth')
-const { Router } = require('express')
+const multer = require('multer')
+const sharp = require('sharp')
 
 app.post("/users", async (req, res, next) => {
     const user = new User(req.body)
+    console.log("ana hna yasta")
     try {
         await user.save()
         const token = await user.generateAuthToken()
@@ -82,6 +84,52 @@ app.delete("/users/me", auth, async (req, res, next) => {
         res.send(req.user)
     } catch (e) {
         res.status(500).send()
+    }
+})
+
+
+const upload = multer({
+    //dest: 'images',
+    limits: {
+        fileSize: 1000000
+    },
+    fileFilter(req, file, cb) {
+        if (!file.originalname.match(/\.(jpg|png|jepg)$/)) {
+            return cb(new Error('please upload an image'))
+        }
+        cb(undefined, true)
+    }
+})
+app.post('/user/me/image', upload.single('image'), async (req, res, next) => {
+    const buffer = await sharp(req.file.buffer).resize({
+        width: 250,
+        height: 250
+    }).png().toBuffer()
+    req.user.images = buffer
+    await req.user.save()
+    res.send()
+}, (error, req, res, next) => {
+    res.status(400).send({ error: error.message })
+})
+
+app.delete('/user/me/image', auth, async (req, res, next) => {
+    req.user.images = undefined
+    await req.user.save()
+    res.send()
+}, (error, req, res, next) => {
+    res.status(400).send({ error: error.message })
+})
+
+app.get('/user/:id/image', async (req, res, next) => {
+    try {
+        const user = await User.findById(req.params.id)
+        if (!user || !user.images) {
+            throw new Error()
+        }
+        res.set('Content-Type', 'image/png')
+        res.send(user.images)
+    } catch (e) {
+        res.status(404).sned()
     }
 })
 

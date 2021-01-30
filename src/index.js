@@ -12,5 +12,5 @@ app.use(userRoutes)
 
 
 app.listen(port, () => {
-    console.log("app is working now")
+    console.log(`app is working now ${port}`)
 })
